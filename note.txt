@@ -1,0 +1,10 @@
+truffle compile
+truffle migrate
+truffle console
+
+In truffle console
+SocialNetwork.deployed()
+const socialNetworkContract = await SocialNetwork.deployed()
+socialNetworkContract.address
+
+name = await socialNetworkContract.name()
