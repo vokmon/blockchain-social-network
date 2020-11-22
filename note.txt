@@ -1,6 +1,10 @@
 truffle compile
 truffle migrate
+// create and deploy a new copy
+truffle migrate --reset
+truffle test
 truffle console
+
 
 In truffle console
 SocialNetwork.deployed()
