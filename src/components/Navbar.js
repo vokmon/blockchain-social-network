@@ -2,6 +2,7 @@ import React from 'react';
 import Identicon from 'identicon.js';
 
 const Navbar = ({ account }) => {
+  console.log(account)
   return (
     <nav className='navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow'>
       <a
