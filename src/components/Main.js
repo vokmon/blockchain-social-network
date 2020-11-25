@@ -5,6 +5,7 @@ import './App.css';
 const Main = ({
   posts,
   createPost,
+  tipPost,
 }) => {
   const inputRef = useRef(null);
   return (
@@ -35,7 +36,11 @@ const Main = ({
             </form>
           </div>
           <div className='content mr-auto ml-auto'>
-            {posts.map((post, key) => {
+            {posts
+            .sort((a, b) => {
+              return b.tipAmount - a.tipAmount
+            })
+            .map((post, key) => {
               return (
                 <div className='card mb-4' key={key}>
                   <div className='card-header'>
@@ -64,7 +69,14 @@ const Main = ({
                         )}{' '}
                         ETH
                       </small>
-                      <button className='btn btn-link btn-sm float-right pt-0'>
+                      <button
+                        className='btn btn-link btn-sm float-right pt-0'
+                        name={post.id}
+                        onClick={(e) => {
+                          const tipAmount = window.web3.utils.toWei('0.1', 'Ether');
+                          tipPost(post.id, tipAmount);
+                        }}
+                      >
                         <span>TIP 0.1 ETH</span>
                       </button>
                     </li>

@@ -105,17 +105,35 @@ const App = () => {
     setState((previousState) => ({
       ...previousState,
       postCount,
-      posts: [...previousState.posts, ...posts],
+      posts: [...posts],
     }));
   }
 
+  const tipPost = async (id, tipAmount) => {
+    setLoading(true);
+    const receipt = await state.socialNetwork.methods.tipPost(id).send({
+      from: state.account,
+      value: tipAmount,
+    });
+    const {
+      postCount,
+      posts,
+    } = await loadPosts(state.socialNetwork);
+
+    setState((previousState) => ({
+      ...previousState,
+      postCount,
+      posts: [...posts],
+    }));
+    setLoading(false);
+  }
   return (
     <div>
       <Navbar account={state.account} />
       {loading ? (
         <div id='loader' className='text-center mt-5'>Loading...</div>
       ) : (
-        <Main posts={state.posts} createPost={createPost} />
+        <Main posts={state.posts} createPost={createPost} tipPost={tipPost} />
       )}
       
     </div>
