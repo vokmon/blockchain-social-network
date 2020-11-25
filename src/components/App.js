@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import Web3 from 'web3';
-import Identicon from 'identicon.js';
 import './App.css';
 import SocialNetwork from '../abis/SocialNetwork.json';
 import Navbar from './Navbar';
+import Main from './Main';
 
 const App = () => {
   const [state, setState] = useState({
@@ -12,6 +12,8 @@ const App = () => {
     postCount: 0,
     posts: [],
   });
+
+  const [loading, setLoading] = useState(true);
 
   const initWeb3 = async () => {
     if (window.ethereum) {
@@ -26,6 +28,24 @@ const App = () => {
     }
   };
 
+  const loadPosts = async (socialNetwork) => {
+    const postCount = await socialNetwork.methods.postCount().call();
+      console.log(postCount);
+
+      // Load posts
+      const postPromises = [];
+      for (let i = 1; i <= postCount; i++) {
+        postPromises.push(socialNetwork.methods.posts(i).call());
+      }
+
+      const posts = await Promise.all(postPromises);
+      console.log(posts);
+
+      return {
+        postCount,
+        posts,
+      }
+  }
   const loadBlockchainData = async () => {
     const web3 = window.web3;
 
@@ -38,22 +58,15 @@ const App = () => {
     const network = SocialNetwork.networks[networkId];
     if (SocialNetwork.networks[networkId]) {
       console.log(network);
-      const socialNetwork = web3.eth.Contract(
+      const socialNetwork = new web3.eth.Contract(
         SocialNetwork.abi,
         network.address
       );
 
-      const postCount = await socialNetwork.methods.postCount().call();
-      console.log(postCount);
-
-      // Load posts
-      const postPromises = [];
-      for (let i = 1; i <= postCount; i++) {
-        postPromises.push(socialNetwork.methods.posts(i).call());
-      }
-
-      const posts = await Promise.all(postPromises);
-      console.log(posts);
+      const {
+        postCount,
+        posts,
+      } = await loadPosts(socialNetwork);
 
       setState((previousState) => ({
         ...previousState,
@@ -69,64 +82,42 @@ const App = () => {
 
   useEffect(() => {
     const init = async () => {
+      setLoading(true);
       await initWeb3();
       await loadBlockchainData();
+      setLoading(false);
     };
     init();
   }, []);
 
+  const createPost = async (content) => {
+    setLoading(true);
+    const receipt = await state.socialNetwork.methods.createPost(content).send({
+      from: state.account,
+    });
+    console.log(receipt)
+    setLoading(false);
+    const {
+      postCount,
+      posts,
+    } = await loadPosts(state.socialNetwork);
+
+    setState((previousState) => ({
+      ...previousState,
+      postCount,
+      posts: [...previousState.posts, ...posts],
+    }));
+  }
+
   return (
     <div>
       <Navbar account={state.account} />
-      <div className='container-fluid mt-5'>
-        <div className='row'>
-          <main
-            role='main'
-            className='col-lg-12 ml-auto mr-auto'
-            style={{ maxWidth: '500px' }}
-          >
-            <div className='content mr-auto ml-auto'>
-              {state.posts.map((post, key) => {
-                return (
-                  <div className='card mb-4' key={key}>
-                    <div className='card-header'>
-                      <img
-                        alt='Account icon'
-                        className='mr-2'
-                        width='30'
-                        height='30'
-                        src={`data:image/png;base64,${new Identicon(
-                          post.author,
-                          30
-                        ).toString()}`}
-                      />
-                      <small className='text-muted'>{post.author}</small>
-                    </div>
-                    <ul id='postlist' className='list-group list-group-flush'>
-                      <li className='list-group-item'>
-                        <p>{post.content}</p>
-                      </li>
-                      <li key={key} className='list-group-item py-2'>
-                        <small className='float-left mt-1 text-muted'>
-                          TIPS:{' '}
-                          {window.web3.utils.fromWei(
-                            post.tipAmount.toString(),
-                            'Ether'
-                          )}{' '}
-                          ETH
-                        </small>
-                        <button className='btn btn-link btn-sm float-right pt-0'>
-                          <span>TIP 0.1 ETH</span>
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          </main>
-        </div>
-      </div>
+      {loading ? (
+        <div id='loader' className='text-center mt-5'>Loading...</div>
+      ) : (
+        <Main posts={state.posts} createPost={createPost} />
+      )}
+      
     </div>
   );
 };
